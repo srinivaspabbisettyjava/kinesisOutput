@@ -94,4 +94,4 @@ public class LambdaFunctionHandler implements RequestHandler<KinesisEvent, Integ
         return event.getRecords().size();
     }
     
-}
+}  
