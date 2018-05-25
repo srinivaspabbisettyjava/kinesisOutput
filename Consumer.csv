@@ -1,0 +1,97 @@
+package com.amazonaws.lambda.demo;
+
+
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
+import com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRecord;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
+public class LambdaFunctionHandler implements RequestHandler<KinesisEvent, Integer> 
+{
+
+    @SuppressWarnings("unchecked")
+	@Override
+    public Integer handleRequest(KinesisEvent event, Context context) 
+    {
+        context.getLogger().log("Input: " + event);
+        String payload = null;
+        String dynamoTableName = null;
+        String InputJson = null;
+       
+        for (KinesisEventRecord record : event.getRecords()) 
+        {
+             payload = new String(record.getKinesis().getData().array());
+             context.getLogger().log("Payload: " + payload);
+             
+             
+             
+             
+             ObjectMapper mapper = new ObjectMapper();
+            
+              try 
+              {
+             
+
+             Map<String,String> myMap = new HashMap<String, String>();
+
+             myMap = mapper.readValue(payload, HashMap.class);
+             
+             for (Map.Entry<String,String> entry : myMap.entrySet()) 
+             {
+            	    String key = entry.getKey();
+            	    
+            	    if(key =="dynamoTableName")
+            	    {
+            	    	dynamoTableName = entry.getValue();
+            	    }
+            	    if(key =="inputJSON")
+            	    {
+            	    	InputJson = entry.getValue();
+            	    }
+            	               	                	
+            	}
+             
+        
+  
+         	
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}                                    
+             
+            context.getLogger().log("Payload: " + dynamoTableName);
+            // Build a list of related items                       
+        }
+
+        AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+        DynamoDB dynamoDB = new DynamoDB(client);
+          
+        Table table = dynamoDB.getTable(dynamoTableName);
+       
+        Item item = new Item()
+            .withPrimaryKey("Id", DateTime.now().toString())
+            .withString("Title", InputJson);            
+
+        // Write the item to the table 
+        PutItemOutcome outcome = table.putItem(item);
+            
+        return event.getRecords().size();
+    }
+    
+}  
