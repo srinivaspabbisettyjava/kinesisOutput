@@ -1,0 +1,53 @@
+package com.amazonaws.lambda.demo;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+import com.amazonaws.services.kinesis.model.PutRecordsRequest;
+import com.amazonaws.services.kinesis.model.PutRecordsRequestEntry;
+import com.amazonaws.services.kinesis.model.PutRecordsResult;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class LambdaFunctionHandler implements RequestHandler<Object, Integer> {
+
+	public Integer handleRequest(Object event, Context context)  
+    {
+        context.getLogger().log("Input: " + event);  
+        String json = "";     
+        ObjectMapper om = new ObjectMapper();
+        try {
+		 json = om.writeValueAsString(event);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}                     
+        AmazonKinesisClientBuilder clientBuilder = AmazonKinesisClientBuilder.standard();                
+        
+        AmazonKinesis kinesisClient = clientBuilder.build();
+ 
+        PutRecordsRequest putRecordsRequest  = new PutRecordsRequest();
+        putRecordsRequest.setStreamName("DemoStream");
+        List <PutRecordsRequestEntry> putRecordsRequestEntryList  = new ArrayList<>(); 
+     
+        PutRecordsRequestEntry putRecordsRequestEntry  = new PutRecordsRequestEntry();
+        putRecordsRequestEntry.setData(ByteBuffer.wrap(json.getBytes()));
+        putRecordsRequestEntry.setPartitionKey(String.format("partitionKey-%d",1));
+        putRecordsRequestEntryList.add(putRecordsRequestEntry); 
+       
+
+        putRecordsRequest.setRecords(putRecordsRequestEntryList);
+        PutRecordsResult putRecordsResult  = kinesisClient.putRecords(putRecordsRequest);
+        System.out.println("Put Result" + putRecordsResult);
+
+        // TODO: implement your handler
+        return 1;
+    }
+
+
+}
