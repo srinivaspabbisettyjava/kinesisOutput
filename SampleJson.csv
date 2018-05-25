@@ -1,0 +1,7 @@
+1. First Pass the sample json as input to Producer.
+2. You can add the dynamo table name dynamically and set the input josn content in inputJson filed which will insert in Dynamo db.
+
+{
+  "dynamoTableName": "demo",
+  "inputJSON": "input json"
+}
